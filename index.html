@@ -27,14 +27,14 @@
 
     <div id="app" v-cloak class="flex flex-col h-full w-full max-w-md mx-auto relative">
         
-        <!-- ================= TOP: OPTIONS ================= -->
-        <div class="flex-none bg-slate-900 border-b border-slate-800 p-2 space-y-2 z-20 shadow-lg">
+        <!-- ================= TOP: OPTIONS (Compact) ================= -->
+        <div class="flex-none bg-slate-900 border-b border-slate-800 p-1.5 space-y-1.5 z-20 shadow-md">
             
             <!-- Row 1: Header & Mode -->
             <div class="flex justify-between items-center">
                 <div class="flex bg-slate-800 rounded p-0.5 border border-slate-700">
-                    <button @click="gameFormat = 'cash_6max'" :class="gameFormat === 'cash_6max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all">Cash 6</button>
-                    <button @click="gameFormat = 'mtt_8max'" :class="gameFormat === 'mtt_8max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all">MTT 8</button>
+                    <button @click="gameFormat = 'cash_6max'" :class="gameFormat === 'cash_6max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1 rounded text-[10px] font-black uppercase transition-all">Cash 6</button>
+                    <button @click="gameFormat = 'mtt_8max'" :class="gameFormat === 'mtt_8max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1 rounded text-[10px] font-black uppercase transition-all">MTT 8</button>
                 </div>
 
                 <button @click="isOpponentTight = !isOpponentTight" 
@@ -46,15 +46,15 @@
             </div>
 
             <!-- Row 2: MTT Calculator -->
-            <div v-if="gameFormat === 'mtt_8max'" class="flex gap-2 animate-in fade-in slide-in-from-top-2">
-                <div class="flex-1 bg-slate-800 rounded p-1 flex gap-1 border border-slate-700">
-                    <input type="tel" v-model="myChips" placeholder="Chips" class="w-1/2 bg-slate-900 rounded px-1 text-xs text-center font-bold focus:outline-none text-white placeholder:text-slate-600">
-                    <input type="tel" v-model="currentBlind" placeholder="BB" class="w-1/3 bg-slate-900 rounded px-1 text-xs text-center font-bold focus:outline-none text-white placeholder:text-slate-600">
+            <div v-if="gameFormat === 'mtt_8max'" class="flex gap-1 animate-in fade-in slide-in-from-top-2">
+                <div class="flex-1 bg-slate-800 rounded p-0.5 flex gap-1 border border-slate-700">
+                    <input type="tel" v-model="myChips" placeholder="Chips" class="w-1/2 bg-slate-900 rounded px-1 py-1 text-xs text-center font-bold focus:outline-none text-white placeholder:text-slate-600">
+                    <input type="tel" v-model="currentBlind" placeholder="BB" class="w-1/3 bg-slate-900 rounded px-1 py-1 text-xs text-center font-bold focus:outline-none text-white placeholder:text-slate-600">
                     <div :class="isShortStack ? 'text-red-400 bg-red-900/30' : 'text-green-400 bg-green-900/30'" class="flex-1 rounded flex items-center justify-center text-[10px] font-black">
                         {{ stackDepthFormatted }}
                     </div>
                 </div>
-                <select v-model="tourneyPhase" class="bg-slate-800 text-[10px] font-bold text-amber-400 border border-slate-700 rounded px-2 w-20 text-center focus:outline-none">
+                <select v-model="tourneyPhase" class="bg-slate-800 text-[10px] font-bold text-amber-400 border border-slate-700 rounded px-1 w-16 text-center focus:outline-none">
                     <option value="chipev">ChipEV</option>
                     <option value="icm">ICM</option>
                     <option value="pko">PKO</option>
@@ -63,88 +63,92 @@
             </div>
 
             <!-- Row 3: Action Buttons -->
-            <div class="flex gap-2 overflow-x-auto hide-scrollbar pt-1">
+            <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
                 <button v-for="act in ['RFI', 'vs_Raise', 'vs_3Bet', 'vs_Limp', 'vs_Cold_3Bet']" 
                     :key="act" 
                     @click="actionType = act"
                     :class="actionType === act ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40 ring-1 ring-indigo-400' : 'bg-slate-800 text-slate-400 border border-slate-700'"
-                    class="px-4 py-2 rounded-lg text-xs font-black uppercase whitespace-nowrap flex-shrink-0 transition-all">
+                    class="px-3 py-1.5 rounded text-[10px] font-black uppercase whitespace-nowrap flex-shrink-0 transition-all">
                     {{ act.replace(/_/g, ' ') }}
                 </button>
             </div>
         </div>
 
-        <!-- ================= MIDDLE: RESULTS ================= -->
-        <div class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden">
+        <!-- ================= MIDDLE: RESULTS (Flexible) ================= -->
+        <div class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             
-            <div class="w-full py-1 text-center bg-slate-900/80 border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold backdrop-blur-sm z-10">
+            <!-- Adviser Banner -->
+            <div class="w-full py-1 text-center bg-slate-900/80 border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold backdrop-blur-sm z-10 shrink-0">
                 Advice: <span class="text-indigo-300">{{ betSizingRecommendation }}</span>
             </div>
 
-            <div class="flex-1 flex p-4 gap-4 items-center justify-center">
+            <!-- Results Container -->
+            <div class="flex-1 flex p-2 gap-2 items-center justify-center min-h-0">
                 <div v-if="!handInput" class="text-slate-800 flex flex-col items-center animate-pulse">
-                    <i data-lucide="layout-grid" class="w-16 h-16 mb-2 opacity-50"></i>
-                    <span class="text-xs font-bold uppercase tracking-widest opacity-50">Tap cards below</span>
+                    <i data-lucide="layout-grid" class="w-12 h-12 mb-1 opacity-50"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-50">Tap cards</span>
                 </div>
 
                 <template v-else>
-                    <div class="flex-1 h-full max-h-64 flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200">
-                        <div :class="getColorClass(resultSuited)" class="flex-1 flex items-center justify-center flex-col p-4 transition-colors duration-300">
-                            <span class="text-5xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandSuited }}</span>
-                            <span class="text-lg font-black text-white/90 uppercase mt-2 tracking-wide bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">{{ getActionName(resultSuited) }}</span>
+                    <!-- Suited/Pair Card -->
+                    <div class="flex-1 h-full flex flex-col rounded-xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200">
+                        <div :class="getColorClass(resultSuited)" class="flex-1 flex items-center justify-center flex-col p-2 transition-colors duration-300">
+                            <span class="text-4xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandSuited }}</span>
+                            <span class="text-sm font-black text-white/90 uppercase mt-1 tracking-wide bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{{ getActionName(resultSuited) }}</span>
                         </div>
-                        <div v-if="!isPair" class="bg-slate-900 py-1.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800">Suited</div>
+                        <div v-if="!isPair" class="bg-slate-900 py-1 text-center text-[9px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800 shrink-0">Suited</div>
                     </div>
 
-                    <div v-if="!isPair" class="flex-1 h-full max-h-64 flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200 delay-75">
-                        <div :class="getColorClass(resultOffsuit)" class="flex-1 flex items-center justify-center flex-col p-4 transition-colors duration-300">
-                            <span class="text-5xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandOff }}</span>
-                            <span class="text-lg font-black text-white/90 uppercase mt-2 tracking-wide bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">{{ getActionName(resultOffsuit) }}</span>
+                    <!-- Offsuit Card -->
+                    <div v-if="!isPair" class="flex-1 h-full flex flex-col rounded-xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200 delay-75">
+                        <div :class="getColorClass(resultOffsuit)" class="flex-1 flex items-center justify-center flex-col p-2 transition-colors duration-300">
+                            <span class="text-4xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandOff }}</span>
+                            <span class="text-sm font-black text-white/90 uppercase mt-1 tracking-wide bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{{ getActionName(resultOffsuit) }}</span>
                         </div>
-                        <div class="bg-slate-900 py-1.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800">Offsuit</div>
+                        <div class="bg-slate-900 py-1 text-center text-[9px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800 shrink-0">Offsuit</div>
                     </div>
                 </template>
             </div>
         </div>
 
-        <!-- ================= BOTTOM: CUSTOM KEYBOARD ================= -->
+        <!-- ================= BOTTOM: KEYBOARD (Compact) ================= -->
         <div class="flex-none bg-slate-900 border-t border-slate-800 pb-safe z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
             
-            <!-- 4-Column Custom Grid -->
-            <div class="grid grid-cols-4 gap-1 p-2 bg-slate-925 h-64">
+            <!-- 4-Column Numpad -->
+            <div class="grid grid-cols-4 gap-1 p-1.5 bg-slate-925">
                 
                 <!-- Row 1 -->
-                <button @click="handleKey('K')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">K</button>
-                <button @click="handleKey('Q')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">Q</button>
-                <button @click="handleKey('J')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">J</button>
-                <button @click="handleKey('T')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">T</button>
+                <button @click="handleKey('K')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">K</button>
+                <button @click="handleKey('Q')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">Q</button>
+                <button @click="handleKey('J')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">J</button>
+                <button @click="handleKey('T')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">T</button>
 
                 <!-- Row 2 -->
-                <button @click="handleKey('A')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">A</button>
-                <button @click="handleKey('2')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">2</button>
-                <button @click="handleKey('3')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">3</button>
+                <button @click="handleKey('A')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">A</button>
+                <button @click="handleKey('2')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">2</button>
+                <button @click="handleKey('3')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">3</button>
                 
                 <!-- Backspace (Spanning right side) -->
-                <button @click="backspace" class="row-span-3 bg-slate-800/50 rounded-lg text-red-400 flex items-center justify-center hover:bg-slate-700 active:bg-red-900/30 active:scale-95 transition-all border border-slate-700/50">
-                    <i data-lucide="delete" class="w-8 h-8"></i>
+                <button @click="backspace" class="row-span-3 bg-slate-800/50 rounded text-red-400 flex items-center justify-center hover:bg-slate-700 active:bg-red-900/30 active:scale-95 transition-all border border-slate-700/50">
+                    <i data-lucide="delete" class="w-6 h-6"></i>
                 </button>
 
                 <!-- Row 3 -->
-                <button @click="handleKey('4')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">4</button>
-                <button @click="handleKey('5')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">5</button>
-                <button @click="handleKey('6')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">6</button>
+                <button @click="handleKey('4')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">4</button>
+                <button @click="handleKey('5')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">5</button>
+                <button @click="handleKey('6')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">6</button>
 
                 <!-- Row 4 -->
-                <button @click="handleKey('7')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">7</button>
-                <button @click="handleKey('8')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">8</button>
-                <button @click="handleKey('9')" class="h-14 bg-slate-800 rounded-lg text-2xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">9</button>
+                <button @click="handleKey('7')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">7</button>
+                <button @click="handleKey('8')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">8</button>
+                <button @click="handleKey('9')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">9</button>
             </div>
 
             <!-- Position Bar -->
-            <div class="flex overflow-x-auto hide-scrollbar gap-2 px-2 py-3 bg-slate-950 border-t border-slate-900">
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 px-2 py-2 bg-slate-950 border-t border-slate-900">
                 <button v-for="pos in availablePositions" :key="pos" @click="position = pos"
                         :class="position === pos ? 'bg-indigo-600 text-white -translate-y-1 shadow-lg shadow-indigo-600/30 ring-1 ring-indigo-400' : 'bg-slate-900 text-slate-500 border border-slate-800'"
-                        class="flex-shrink-0 w-16 h-12 rounded-xl flex items-center justify-center text-sm font-black transition-all duration-200">
+                        class="flex-shrink-0 w-14 h-10 rounded-lg flex items-center justify-center text-xs font-black transition-all duration-200">
                     {{ pos }}
                 </button>
             </div>
@@ -156,7 +160,7 @@
     <script>
         const { createApp, ref, computed, watch, nextTick } = Vue;
 
-        /* --- DATA HELPERS --- */
+        /* --- STRATEGY DATA HELPERS --- */
         const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
         const MAP = {}; RANKS.forEach((r, i) => MAP[r] = i);
 
