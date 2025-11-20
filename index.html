@@ -27,7 +27,7 @@
 
     <div id="app" v-cloak class="flex flex-col h-full w-full max-w-md mx-auto relative">
         
-        <!-- ================= TOP: OPTIONS (Compact) ================= -->
+        <!-- ================= TOP: OPTIONS ================= -->
         <div class="flex-none bg-slate-900 border-b border-slate-800 p-1.5 space-y-1.5 z-20 shadow-md">
             
             <!-- Row 1: Header & Mode -->
@@ -62,27 +62,25 @@
                 </select>
             </div>
 
-            <!-- Row 3: Action Buttons -->
-            <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
-                <button v-for="act in ['RFI', 'vs_Raise', 'vs_3Bet', 'vs_Limp', 'vs_Cold_3Bet']" 
+            <!-- Row 3: Action Buttons (GRID LAYOUT - NO SCROLL) -->
+            <div class="grid grid-cols-5 gap-1 pt-0.5">
+                <button v-for="act in actionKeys" 
                     :key="act" 
                     @click="actionType = act"
                     :class="actionType === act ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40 ring-1 ring-indigo-400' : 'bg-slate-800 text-slate-400 border border-slate-700'"
-                    class="px-3 py-1.5 rounded text-[10px] font-black uppercase whitespace-nowrap flex-shrink-0 transition-all">
-                    {{ act.replace(/_/g, ' ') }}
+                    class="px-0 py-2 rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center tracking-tight">
+                    {{ getActionLabel(act) }}
                 </button>
             </div>
         </div>
 
-        <!-- ================= MIDDLE: RESULTS (Flexible) ================= -->
+        <!-- ================= MIDDLE: RESULTS ================= -->
         <div class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             
-            <!-- Adviser Banner -->
             <div class="w-full py-1 text-center bg-slate-900/80 border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold backdrop-blur-sm z-10 shrink-0">
                 Advice: <span class="text-indigo-300">{{ betSizingRecommendation }}</span>
             </div>
 
-            <!-- Results Container -->
             <div class="flex-1 flex p-2 gap-2 items-center justify-center min-h-0">
                 <div v-if="!handInput" class="text-slate-800 flex flex-col items-center animate-pulse">
                     <i data-lucide="layout-grid" class="w-12 h-12 mb-1 opacity-50"></i>
@@ -90,7 +88,6 @@
                 </div>
 
                 <template v-else>
-                    <!-- Suited/Pair Card -->
                     <div class="flex-1 h-full flex flex-col rounded-xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200">
                         <div :class="getColorClass(resultSuited)" class="flex-1 flex items-center justify-center flex-col p-2 transition-colors duration-300">
                             <span class="text-4xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandSuited }}</span>
@@ -99,7 +96,6 @@
                         <div v-if="!isPair" class="bg-slate-900 py-1 text-center text-[9px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800 shrink-0">Suited</div>
                     </div>
 
-                    <!-- Offsuit Card -->
                     <div v-if="!isPair" class="flex-1 h-full flex flex-col rounded-xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200 delay-75">
                         <div :class="getColorClass(resultOffsuit)" class="flex-1 flex items-center justify-center flex-col p-2 transition-colors duration-300">
                             <span class="text-4xl font-black tracking-tighter text-white drop-shadow-lg">{{ displayHandOff }}</span>
@@ -111,44 +107,42 @@
             </div>
         </div>
 
-        <!-- ================= BOTTOM: KEYBOARD (Compact) ================= -->
+        <!-- ================= BOTTOM: KEYBOARD ================= -->
         <div class="flex-none bg-slate-900 border-t border-slate-800 pb-safe z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
             
-            <!-- 4-Column Numpad -->
             <div class="grid grid-cols-4 gap-1 p-1.5 bg-slate-925">
-                
-                <!-- Row 1 -->
                 <button @click="handleKey('K')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">K</button>
                 <button @click="handleKey('Q')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">Q</button>
                 <button @click="handleKey('J')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">J</button>
                 <button @click="handleKey('T')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">T</button>
 
-                <!-- Row 2 -->
                 <button @click="handleKey('A')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">A</button>
                 <button @click="handleKey('2')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">2</button>
                 <button @click="handleKey('3')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">3</button>
                 
-                <!-- Backspace (Spanning right side) -->
                 <button @click="backspace" class="row-span-3 bg-slate-800/50 rounded text-red-400 flex items-center justify-center hover:bg-slate-700 active:bg-red-900/30 active:scale-95 transition-all border border-slate-700/50">
                     <i data-lucide="delete" class="w-6 h-6"></i>
                 </button>
 
-                <!-- Row 3 -->
                 <button @click="handleKey('4')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">4</button>
                 <button @click="handleKey('5')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">5</button>
                 <button @click="handleKey('6')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">6</button>
 
-                <!-- Row 4 -->
                 <button @click="handleKey('7')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">7</button>
                 <button @click="handleKey('8')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">8</button>
                 <button @click="handleKey('9')" class="h-11 bg-slate-800 rounded text-xl font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white transition-all border border-slate-700/50">9</button>
             </div>
 
             <!-- Position Bar -->
-            <div class="flex overflow-x-auto hide-scrollbar gap-2 px-2 py-2 bg-slate-950 border-t border-slate-900">
+            <div class="px-1 py-2 bg-slate-950 border-t border-slate-900"
+                 :class="gameFormat === 'cash_6max' ? 'grid grid-cols-6 gap-1' : 'flex overflow-x-auto hide-scrollbar gap-2'">
+                
                 <button v-for="pos in availablePositions" :key="pos" @click="position = pos"
-                        :class="position === pos ? 'bg-indigo-600 text-white -translate-y-1 shadow-lg shadow-indigo-600/30 ring-1 ring-indigo-400' : 'bg-slate-900 text-slate-500 border border-slate-800'"
-                        class="flex-shrink-0 w-14 h-10 rounded-lg flex items-center justify-center text-xs font-black transition-all duration-200">
+                        :class="[
+                            position === pos ? 'bg-indigo-600 text-white -translate-y-1 shadow-lg shadow-indigo-600/30 ring-1 ring-indigo-400' : 'bg-slate-900 text-slate-500 border border-slate-800',
+                            gameFormat === 'cash_6max' ? 'text-[10px]' : 'flex-shrink-0 w-14 text-xs'
+                        ]"
+                        class="h-10 rounded-lg flex items-center justify-center font-black transition-all duration-200">
                     {{ pos }}
                 </button>
             </div>
@@ -355,6 +349,9 @@
                 const tourneyPhase = ref('chipev');
                 const isOpponentTight = ref(false);
 
+                // Action Key List (Mapping handled in template)
+                const actionKeys = ['RFI', 'vs_Raise', 'vs_3Bet', 'vs_Limp', 'vs_Cold_3Bet'];
+
                 // --- CALCULATORS ---
                 const stackDepth = computed(() => {
                     const c = parseFloat(myChips.value), b = parseFloat(currentBlind.value);
@@ -454,6 +451,17 @@
                     return 'FOLD';
                 };
 
+                const getActionLabel = (key) => {
+                    const map = {
+                        'RFI': 'OPEN',
+                        'vs_Raise': 'RAISE',
+                        'vs_3Bet': '3BET',
+                        'vs_Limp': 'LIMP',
+                        'vs_Cold_3Bet': 'COLD 3B'
+                    };
+                    return map[key] || key;
+                };
+
                 const betSizingRecommendation = computed(() => {
                     const act = actionType.value;
                     const pos = position.value;
@@ -485,7 +493,7 @@
                     handleKey, backspace,
                     stackDepthFormatted, isShortStack, availablePositions,
                     isPair, displayHandSuited, displayHandOff, resultSuited, resultOffsuit,
-                    getColorClass, getActionName, betSizingRecommendation
+                    getColorClass, getActionName, betSizingRecommendation, actionKeys, getActionLabel
                 };
             }
         }).mount('#app');
