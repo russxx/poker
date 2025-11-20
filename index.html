@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GTO Mobile</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        [v-cloak] { display: none; }
+        /* Hide scrollbars for sleek look */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Custom gradients */
+        .bg-mixed { background: linear-gradient(135deg, #ef4444 50%, #3b82f6 50%); }
+        
+        /* Disable double-tap zoom on buttons */
+        button { touch-action: manipulation; }
+        .no-select { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-[100dvh] w-screen overflow-hidden font-sans flex flex-col">
+
+    <div id="app" v-cloak class="flex flex-col h-full w-full max-w-md mx-auto relative">
+        
+        <!-- ================= TOP SECTION: OPTIONS ================= -->
+        <div class="flex-none bg-slate-900 border-b border-slate-800 p-2 space-y-2 z-20">
+            
+            <!-- Row 1: Header & Mode -->
+            <div class="flex justify-between items-center">
+                <div class="flex bg-slate-800 rounded p-0.5">
+                    <button @click="gameFormat = 'cash_6max'" :class="gameFormat === 'cash_6max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all">Cash 6</button>
+                    <button @click="gameFormat = 'mtt_8max'" :class="gameFormat === 'mtt_8max' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all">MTT 8</button>
+                </div>
+
+                <!-- Exploitative Toggle (Tight Opponent) -->
+                <button @click="isOpponentTight = !isOpponentTight" 
+                    :class="isOpponentTight ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-slate-800 text-slate-500 border-slate-700'"
+                    class="px-2 py-1 border rounded flex items-center gap-1 text-[10px] font-bold uppercase transition-all">
+                    <i data-lucide="shield" class="w-3 h-3"></i>
+                    {{ isOpponentTight ? 'Tight Villain' : 'GTO Mode' }}
+                </button>
+            </div>
+
+            <!-- Row 2: MTT Calculator (Conditional) -->
+            <div v-if="gameFormat === 'mtt_8max'" class="flex gap-2 animate-in fade-in slide-in-from-top-2">
+                <div class="flex-1 bg-slate-800 rounded p-1 flex gap-1 border border-slate-700">
+                    <input type="tel" v-model="myChips" placeholder="Chips" class="w-1/2 bg-slate-900 rounded px-1 text-xs text-center font-bold focus:outline-none">
+                    <input type="tel" v-model="currentBlind" placeholder="BB" class="w-1/3 bg-slate-900 rounded px-1 text-xs text-center font-bold focus:outline-none">
+                    <div :class="isShortStack ? 'text-red-400 bg-red-900/30' : 'text-green-400 bg-green-900/30'" class="flex-1 rounded flex items-center justify-center text-[10px] font-black">
+                        {{ stackDepthFormatted }}
+                    </div>
+                </div>
+                <select v-model="tourneyPhase" class="bg-slate-800 text-[10px] font-bold text-amber-400 border border-slate-700 rounded px-2 w-20 text-center focus:outline-none">
+                    <option value="chipev">ChipEV</option>
+                    <option value="icm">ICM</option>
+                    <option value="pko">PKO</option>
+                    <option value="satellite_bubble">Sat.</option>
+                </select>
+            </div>
+
+            <!-- Row 3: Action Buttons (Scrollable) -->
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar pt-1">
+                <button v-for="act in ['RFI', 'vs_Raise', 'vs_3Bet', 'vs_Limp', 'vs_Cold_3Bet']" 
+                    :key="act" 
+                    @click="actionType = act"
+                    :class="actionType === act ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : 'bg-slate-800 text-slate-400 border border-slate-700'"
+                    class="px-4 py-2 rounded-lg text-xs font-black uppercase whitespace-nowrap flex-shrink-0 transition-all">
+                    {{ act.replace(/_/g, ' ') }}
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MIDDLE SECTION: RESULTS DISPLAY ================= -->
+        <div class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden">
+            
+            <!-- Bet Sizing Adviser -->
+            <div class="w-full py-1 text-center bg-slate-900/50 border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                Advice: <span class="text-indigo-300">{{ betSizingRecommendation }}</span>
+            </div>
+
+            <!-- THE RESULTS AREA -->
+            <div class="flex-1 flex p-4 gap-4 items-center justify-center">
+                
+                <!-- Empty State -->
+                <div v-if="!handInput" class="text-slate-700 flex flex-col items-center animate-pulse">
+                    <i data-lucide="hand-metal" class="w-16 h-16 mb-2 opacity-20"></i>
+                    <span class="text-sm font-bold uppercase tracking-widest">Enter Hand</span>
+                </div>
+
+                <!-- Result Cards -->
+                <template v-else>
+                    <!-- Card 1 (Suited or Pair) -->
+                    <div class="flex-1 h-full max-h-64 flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200">
+                        <div :class="getColorClass(resultSuited)" class="flex-1 flex items-center justify-center flex-col p-4 transition-colors duration-300">
+                            <span class="text-5xl font-black tracking-tighter text-white drop-shadow-md">
+                                {{ displayHandSuited }}
+                            </span>
+                            <span class="text-xl font-bold text-white/90 uppercase mt-2 tracking-wide">
+                                {{ getActionName(resultSuited) }}
+                            </span>
+                        </div>
+                        <!-- Label (only if split) -->
+                        <div v-if="!isPair" class="bg-slate-900 py-1 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            Suited
+                        </div>
+                    </div>
+
+                    <!-- Card 2 (Offsuit - Only if not pair) -->
+                    <div v-if="!isPair" class="flex-1 h-full max-h-64 flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-slate-800 relative animate-in zoom-in-95 duration-200 delay-75">
+                        <div :class="getColorClass(resultOffsuit)" class="flex-1 flex items-center justify-center flex-col p-4 transition-colors duration-300">
+                            <span class="text-5xl font-black tracking-tighter text-white drop-shadow-md">
+                                {{ displayHandOff }}
+                            </span>
+                            <span class="text-xl font-bold text-white/90 uppercase mt-2 tracking-wide">
+                                {{ getActionName(resultOffsuit) }}
+                            </span>
+                        </div>
+                        <div class="bg-slate-900 py-1 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            Offsuit
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ================= BOTTOM SECTION: INPUTS ================= -->
+        <div class="flex-none bg-slate-900 border-t border-slate-800 pb-safe">
+            
+            <!-- Custom Keyboard -->
+            <div class="grid grid-cols-5 gap-1 p-2 bg-slate-925">
+                <!-- Ranks -->
+                <button v-for="rank in KEYBOARD_RANKS" :key="rank" @click="handleKey(rank)"
+                    class="h-12 bg-slate-800 rounded text-lg font-bold text-indigo-100 hover:bg-slate-700 active:bg-indigo-600 active:text-white active:scale-95 transition-all shadow-sm border border-slate-700/50">
+                    {{ rank }}
+                </button>
+                <!-- Backspace -->
+                <button @click="backspace" class="h-12 bg-slate-800 rounded text-red-400 flex items-center justify-center hover:bg-slate-700 active:bg-red-900/50 active:scale-95 transition-all border border-slate-700/50">
+                    <i data-lucide="delete" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Position Bar (Sticky Bottom) -->
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 px-2 py-3 bg-slate-950 border-t border-slate-900">
+                <button v-for="pos in availablePositions" :key="pos" @click="position = pos"
+                        :class="position === pos ? 'bg-indigo-600 text-white -translate-y-1 shadow-lg shadow-indigo-600/30' : 'bg-slate-900 text-slate-500 border border-slate-800'"
+                        class="flex-shrink-0 w-14 h-12 rounded-xl flex items-center justify-center text-sm font-black transition-all duration-200">
+                    {{ pos }}
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- APP LOGIC -->
+    <script>
+        const { createApp, ref, computed, watch, nextTick } = Vue;
+
+        /* --- STRATEGY DATA & PARSING HELPERS --- */
+        const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const MAP = {}; RANKS.forEach((r, i) => MAP[r] = i);
+
+        const parseRange = (map, str, action) => {
+            if (!str) return;
+            str.split(',').map(s => s.trim()).filter(s => s).forEach(p => {
+                if (p.includes('-')) {
+                    const [s, e] = p.split('-');
+                    if (s.length === 2 && s[0] === s[1]) { 
+                        const mx = Math.max(MAP[s[0]], MAP[e[0]]), mn = Math.min(MAP[s[0]], MAP[e[0]]);
+                        for(let i=mn; i<=mx; i++) map[RANKS[i]+RANKS[i]] = action;
+                    } else {
+                        const r1=s[0], t=s[2], mx = Math.max(MAP[s[1]], MAP[e[1]]), mn = Math.min(MAP[s[1]], MAP[e[1]]);
+                        for(let i=mn; i<=mx; i++) {
+                            let c1=r1, c2=RANKS[i];
+                            if(MAP[c1]>MAP[c2]) [c1,c2]=[c2,c1];
+                            map[c1+c2+t] = action;
+                        }
+                    }
+                } else {
+                    let isPlus = p.endsWith('+');
+                    let raw = isPlus ? p.slice(0,-1) : p;
+                    if (raw.length === 2) {
+                        let idx = MAP[raw[0]], lim = isPlus ? 0 : idx;
+                        for(let i=idx; i>=lim; i--) map[RANKS[i]+RANKS[i]] = action;
+                    } else {
+                        let r1=raw[0], r2=raw[1], t=raw[2];
+                        let i1=MAP[r1], i2=MAP[r2];
+                        if(i1>i2) { [r1,r2]=[r2,r1]; [i1,i2]=[i2,i1]; }
+                        if (isPlus) { for(let i=i2; i>i1; i--) map[r1+RANKS[i]+t] = action; }
+                        else { map[r1+r2+t] = action; }
+                    }
+                }
+            });
+        };
+
+        const build = (r, c) => {
+            const m = {};
+            const raises = {}; parseRange(raises, r, 'raise');
+            const calls = {}; parseRange(calls, c, 'call');
+            const all = new Set([...Object.keys(raises), ...Object.keys(calls)]);
+            all.forEach(k => {
+                if (raises[k] && calls[k]) m[k] = 'mixed';
+                else if (raises[k]) m[k] = 'raise';
+                else if (calls[k]) m[k] = 'call';
+            });
+            return m;
+        };
+
+        const bbLimp = (raiseRange) => {
+            const m = {};
+            const r = {}; parseRange(r, raiseRange, 'raise');
+            for(let i=0; i<13; i++) {
+                for(let j=0; j<13; j++) {
+                    let k = i===j ? RANKS[i]+RANKS[j] : (i<j ? RANKS[i]+RANKS[j]+'s' : RANKS[j]+RANKS[i]+'o');
+                    m[k] = r[k] ? 'raise' : 'call';
+                }
+            }
+            return m;
+        };
+
+        /* --- STRATEGY DATA --- */
+        const STRATEGIES = {
+            "cash_6max": {
+                "positions": ["UTG", "HJ", "CO", "BTN", "SB", "BB"],
+                "data": {
+                    "UTG": {
+                        "RFI": build("77+, ATs+, KJs+, QJs, JTs, AQo+"),
+                        "vs_Raise": build("QQ+, AKs, AKo", "77-JJ, AQs, KQs, AQo"),
+                        "vs_3Bet": build("KK+, AKs, AKo", "TT-QQ, AQs, KQs"),
+                        "vs_Limp": build("77+, ATs+, KJs+, QJs, JTs, AQo+"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    },
+                    "HJ": {
+                        "RFI": build("55+, A2s+, KTs+, QTs+, JTs, T9s, AJo+, KQo"),
+                        "vs_Raise": build("JJ+, AKo, AQs+, A5s, A4s", "88-TT, AJs, KQs, JTs"),
+                        "vs_3Bet": build("QQ+, AKo, AKs", "99-JJ, AQs, KQs, JTs"),
+                        "vs_Limp": build("55+, A2s+, KTs+, QTs+, JTs, T9s, AJo+, KQo"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    },
+                    "CO": {
+                        "RFI": build("22+, A2s+, K8s+, Q9s+, J9s+, T8s+, 98s, 87s, ATo+, KJo+, QJo"),
+                        "vs_Raise": build("TT+, AJo+, AQs+, KQs, A2s-A5s, 76s, 87s", ""),
+                        "vs_3Bet": build("JJ+, AKo, AKs, A2s-A5s", "88-TT, AQs, KQs, JTs, T9s"),
+                        "vs_Limp": build("55+, A2s+, KTs+, QTs+, JTs, T9s, 98s, AJo+, KQo", "22-44, 54s, 65s, 76s, 87s"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    },
+                    "BTN": {
+                        "RFI": build("22+, A2s+, K2s+, Q5s+, J6s+, T6s+, 96s+, 86s+, 75s+, 65s, 54s, A4o+, K9o+, Q9o+, J9o+, T9o"),
+                        "vs_Raise": build("QQ+, AQs, AKs, AKo, A2s-A5s, T9s, JTs", "22-JJ, AJs-ATs, KQs-KTs, QJs-QTs, J9s, 98s, 87s, AQo"),
+                        "vs_3Bet": build("JJ+, AKo, AKs, A2s-A5s", "88-TT, AQs, KQs, JTs, T9s"),
+                        "vs_Limp": build("55+, A2s+, K8s+, Q9s+, J9s+, T8s+, 98s, 87s, ATo+, KJo+, QJo", "22-44, 43s, 54s, 65s, 76s"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    },
+                    "SB": {
+                        "RFI": build("22+, A2s+, K2s+, Q4s+, J5s+, T6s+, 96s+, 86s+, 76s, 65s, 54s, A7o+, K9o+, Q9o+, J9o+, T9o"),
+                        "vs_Raise": build("TT+, AQo+, AJs+, KQs, A2s-A5s, 76s, 87s", "22-99, ATs, KJs, QJs, JTs, T9s"),
+                        "vs_3Bet": build("QQ+, AKo, AKs, A5s", "88-JJ, AQs, KQs"),
+                        "vs_Limp": build("88+, AJs+, KQs, AQo+", "22-77, A2s-ATs, K2s-KJs, Q5s+, J7s+, T7s+, 97s+, 87s, 76s, 65s, 54s, ATo-AJo"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    },
+                    "BB": {
+                        "RFI": build(""), 
+                        "vs_Raise": build("TT+, AQs+, AKo, A2s-A5s, 65s, 76s", "22-99, ATs-AJs, KTs+, QTs+, JTs, T9s, 98s, 87s, 54s, A9o-AQo, KTo+, QTo+, JTo"),
+                        "vs_3Bet": build("QQ+, AKo, AKs", "99-JJ, AQs, KQs"),
+                        "vs_Limp": bbLimp("JJ+, AQs+, AKo"),
+                        "vs_Cold_3Bet": build("QQ+, AKs, AKo")
+                    }
+                }
+            },
+            "mtt_8max": {
+                "positions": ["UTG", "UTG+1", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+                "data": {
+                    "UTG": { 
+                        "RFI": build("77+, ATs+, KJs+, QJs, JTs, AQo+"), 
+                        "vs_Raise": build("QQ+, AKs, AKo", "77-JJ, AQs, AJs, KQs, AQo"), 
+                        "vs_3Bet": build("QQ+, AKs, AKo", "JJ, TT, AQs"),
+                        "vs_Limp": build("88+, ATs+, KJs+, AQo+")
+                    },
+                    "UTG+1": { 
+                        "RFI": build("77+, ATs+, AJo+, KQs, JTs, T9s"), 
+                        "vs_Raise": build("QQ+, AKs, AKo", "77-JJ, AQs, AJs, KQs, QJs, JTs"), 
+                        "vs_3Bet": build("QQ+, AKs, AKo", "JJ, TT, AQs, AJs"), 
+                        "vs_Limp": build("88+, ATs+, KJs+, AQo+")
+                    },
+                    "LJ": { 
+                        "RFI": build("66+, ATs+, KJs+, QJs, JTs, T9s, ATo+, KQo"), 
+                        "vs_Raise": build("JJ+, AKs, AKo", "66-TT, AQs, AJs, KQs, QJs, JTs"), 
+                        "vs_3Bet": build("JJ+, AKs, AKo", "TT, 99, AQs, AJs"),
+                        "vs_Limp": build("77+, ATs+, AJo+")
+                    },
+                    "HJ": { 
+                        "RFI": build("55+, A9s+, KTs+, QJs, JTs, T9s, A9o+, KJo+"), 
+                        "vs_Raise": build("TT+, AQs+, AKo", "55-99, AJs, KQs, QJs, JTs, T9s"), 
+                        "vs_3Bet": build("JJ+, AKs, AKo", "99, TT, AQs, AJs, KQs"),
+                        "vs_Limp": build("66+, A9s+, ATo+")
+                    },
+                    "CO": { 
+                        "RFI": build("22+, A2s+, K9s+, Q9s+, J9s+, T8s+, 97s+, 87s, 76s, A8o+, KJo+, QJo"), 
+                        "vs_Raise": build("99+, AJs+, AQo+, A2s-A5s", "22-88, KQs, KJs, QJs, JTs, T9s, 98s"), 
+                        "vs_3Bet": build("TT+, AKs, AKo", "88, 99, AQs, AJs, KQs, QJs"),
+                        "vs_Limp": build("44+, A5s+, A9o+", "22-33, 54s-87s")
+                    },
+                    "BTN": { 
+                        "RFI": build("22+, A2s+, K2s+, Q4s+, J7s+, T7s+, 97s+, 86s+, 75s+, 65s, 54s, A2o+, K8o+, Q9o+, J9o+, T9o"), 
+                        "vs_Raise": build("88+, ATs+, AJo+, A2s-A5s", "22-77, A9s, KTs+, QJs, JTs, T9s, 98s, 87s, 76s, 65s, KJo, QJo"), 
+                        "vs_3Bet": build("99+, AJs+, AQo+, A2s-A5s", "66-88, ATs, KQs, QJs, JTs, T9s"),
+                        "vs_Limp": build("22+, A2s+, K9s+, Q9s+", "54s-87s")
+                    },
+                    "SB": { 
+                        "RFI": build("22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 97s+, 87s, 76s, 65s, 54s, A2o+, K5o+, Q8o+, J8o+, T8o+, 98o"), 
+                        "vs_Raise": build("99+, AJs+, AQo+", "22-88, ATs, KQs, QJs, JTs, T9s"), 
+                        "vs_3Bet": build("99+, AJs+, AQo+", "77, 88, ATs, KQs, QJs"),
+                        "vs_Limp": build("99+, AJs+, AQo+", "22-88, A2s-ATs, KTs+, QJs, JTs, T9s, 98s")
+                    },
+                    "BB": { 
+                        "RFI": build(""), 
+                        "vs_Raise": build("99+, AJs+, AQo+, A2s-A5s", "22-88, A2s-ATs, KTs+, QJs, JTs, T9s, 98s, 87s, 76s, 65s, 54s, ATo-AJo, KTo+, QTo+, JTo"), 
+                        "vs_3Bet": build("TT+, AQs+, AKo", "77-99, AJs, ATs, KQs"),
+                        "vs_Limp": bbLimp("JJ+, AQs+, AKo")
+                    }
+                }
+            },
+            "mtt_8max_short": {
+                "positions": ["UTG", "UTG+1", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+                "data": {
+                    "UTG": { "RFI": build("77+, AJs+, AQo+, KQs"), "vs_Raise": build("QQ+, AKs, AKo"), "vs_3Bet": build("QQ+, AKs, AKo"), "vs_Limp": build("88+, AJs+, AQo+") },
+                    "UTG+1": { "RFI": build("77+, ATs+, AJo+, KQs"), "vs_Raise": build("QQ+, AKs, AKo"), "vs_3Bet": build("QQ+, AKs, AKo"), "vs_Limp": build("88+, ATs+, AQo+") },
+                    "LJ": { "RFI": build("66+, ATs+, KJs+, QJs, ATo+, KQo"), "vs_Raise": build("JJ+, AKs, AKo"), "vs_3Bet": build("JJ+, AKs, AKo"), "vs_Limp": build("77+, ATs+, AJo+") },
+                    "HJ": { "RFI": build("55+, A9s+, KTs+, QJs, JTs, A9o+, KJo+"), "vs_Raise": build("TT+, AQs, AKs, AKo"), "vs_3Bet": build("TT+, AQs, AKs, AKo"), "vs_Limp": build("66+, A9s+, ATo+") },
+                    "CO": { "RFI": build("22+, A2s+, KTs+, QJs, JTs, T9s, A8o+, KJo+"), "vs_Raise": build("99+, AJs+, AQo+"), "vs_3Bet": build("99+, AJs+, AQo+"), "vs_Limp": build("44+, A5s+, A9o+") },
+                    "BTN": { "RFI": build("22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 98s, A2o+, K9o+, Q9o+, J9o+"), "vs_Raise": build("88+, ATs+, AJo+"), "vs_3Bet": build("88+, ATs+, AJo+"), "vs_Limp": build("22+, A2s+, K9s+, Q9s+") },
+                    "SB": { "RFI": build("22+, A2s+, K2s+, Q2s+, J4s+, T6s+, 96s+, 87s, A2o+, K2o+, Q5o+, J7o+"), "vs_Raise": build("88+, AJs+, AQo+"), "vs_3Bet": build("88+, AJs+, AQo+"), "vs_Limp": build("99+, AJs+, AQo+") },
+                    "BB": { 
+                        "RFI": build(""), 
+                        "vs_Raise": build("77+, AJs+, AQo+", "22-66, A2s-ATs, KTs+, QJs, JTs, ATo-AJo"), 
+                        "vs_3Bet": build("77+, AJs+, AQo+"), 
+                        "vs_Limp": build("JJ+, AQs+, AKo")
+                    }
+                }
+            }
+        };
+
+        createApp({
+            setup() {
+                const gameFormat = ref('cash_6max');
+                const position = ref('BTN');
+                const actionType = ref('RFI');
+                const handInput = ref('');
+                const myChips = ref('');
+                const currentBlind = ref('');
+                const tourneyPhase = ref('chipev');
+                const isOpponentTight = ref(false);
+                
+                const KEYBOARD_RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+
+                // --- CALCULATORS ---
+                const stackDepth = computed(() => {
+                    const c = parseFloat(myChips.value), b = parseFloat(currentBlind.value);
+                    return (c && b && b > 0) ? c/b : 0;
+                });
+
+                const stackDepthFormatted = computed(() => stackDepth.value > 0 ? Math.round(stackDepth.value) + ' BB' : '-');
+                const isShortStack = computed(() => gameFormat.value === 'mtt_8max' && stackDepth.value > 0 && stackDepth.value < 20);
+
+                const currentGameData = computed(() => {
+                    if (gameFormat.value === 'mtt_8max' && isShortStack.value) return STRATEGIES['mtt_8max_short'];
+                    return STRATEGIES[gameFormat.value];
+                });
+
+                const availablePositions = computed(() => currentGameData.value.positions);
+                
+                watch([availablePositions], () => {
+                    if(!availablePositions.value.includes(position.value)) {
+                        position.value = availablePositions.value[availablePositions.value.length - 1];
+                    }
+                });
+
+                // --- KEYBOARD HANDLER ---
+                const handleKey = (key) => {
+                    // Logic: If we have 2 chars, we are starting a NEW hand (Rapid fire)
+                    if (handInput.value.length >= 2) {
+                        handInput.value = key;
+                    } else {
+                        handInput.value += key;
+                    }
+                    // Sort Logic (High card first)
+                    if (handInput.value.length === 2) {
+                        let r1 = handInput.value[0], r2 = handInput.value[1];
+                        if (MAP[r1] > MAP[r2]) handInput.value = r2 + r1;
+                    }
+                };
+                
+                const backspace = () => {
+                    handInput.value = handInput.value.slice(0, -1);
+                };
+
+                // --- LOGIC ---
+                const isPair = computed(() => {
+                    if (handInput.value.length !== 2) return false;
+                    return handInput.value[0] === handInput.value[1];
+                });
+
+                const displayHandSuited = computed(() => isPair.value ? handInput.value : handInput.value + 's');
+                const displayHandOff = computed(() => handInput.value + 'o');
+
+                const getResult = (handKey) => {
+                    if (handInput.value.length !== 2) return 'fold';
+                    
+                    let rangeObj = currentGameData.value.data[position.value]?.[actionType.value] || {};
+                    let base = rangeObj[handKey] || 'fold';
+
+                    // FILTERS
+                    if (isOpponentTight.value && ['vs_Raise', 'vs_3Bet'].includes(actionType.value)) {
+                        if (['A2s','A3s','A4s','A5s','76s','87s','98s'].includes(handKey) && base === 'raise') return 'fold';
+                    }
+                    if (gameFormat.value === 'mtt_8max') {
+                        if (tourneyPhase.value === 'satellite_bubble' && !isShortStack.value) {
+                            return (handKey === 'AA' || handKey === 'KK') ? 'raise' : 'fold';
+                        }
+                        if (tourneyPhase.value === 'icm') {
+                            if (isShortStack.value) {
+                                if (base === 'call' && !['AA','KK','QQ','AKs','AKo'].includes(handKey)) return 'fold';
+                            } else {
+                                if (base !== 'fold') {
+                                    const r1=handKey[0], r2=handKey[1], t=handKey[2]||'';
+                                    const i1=MAP[r1], i2=MAP[r2];
+                                    if (r1===r2 && i1>=8) return 'fold'; 
+                                    if (r1==='A' && t==='o' && i2>=6) return 'fold';
+                                    if (t==='s' && i2===i1+1 && i1>=7) return 'fold';
+                                }
+                            }
+                        }
+                        if (tourneyPhase.value === 'pko' && !isShortStack.value) {
+                            if (base === 'fold' && ['88','77','KJs','KTs','QJs','QTs','JTs'].includes(handKey)) return 'call';
+                        }
+                    }
+                    return base;
+                };
+
+                const resultSuited = computed(() => getResult(displayHandSuited.value));
+                const resultOffsuit = computed(() => getResult(displayHandOff.value));
+
+                const getColorClass = (action) => {
+                    if(action === 'raise') return 'bg-red-500';
+                    if(action === 'call') return 'bg-blue-500';
+                    if(action === 'mixed') return 'bg-mixed';
+                    return 'bg-slate-800';
+                };
+
+                const getActionName = (action) => {
+                    if(action === 'raise') return isShortStack.value ? 'PUSH ALL-IN' : 'RAISE';
+                    if(action === 'call') return 'CALL';
+                    if(action === 'mixed') return 'MIXED';
+                    return 'FOLD';
+                };
+
+                const betSizingRecommendation = computed(() => {
+                    const act = actionType.value;
+                    const pos = position.value;
+                    if (act === 'RFI') return "Open 2.5x";
+                    if (act === 'vs_Limp') return "Iso 4BB+";
+                    if (act === 'vs_Cold_3Bet') return "Fold or Cold 4B";
+                    if (act === 'vs_Raise') return ['SB', 'BB'].includes(pos) ? "3-Bet 4x" : "3-Bet 3x";
+                    if (act === 'vs_3Bet') return isShortStack.value ? "Jam" : "4-Bet 2.2x";
+                    return "-";
+                });
+                
+                // --- PERSISTENCE ---
+                if (localStorage.getItem('gto_mobile_mode')) gameFormat.value = localStorage.getItem('gto_mobile_mode');
+                if (localStorage.getItem('gto_mobile_chips')) myChips.value = localStorage.getItem('gto_mobile_chips');
+                if (localStorage.getItem('gto_mobile_blind')) currentBlind.value = localStorage.getItem('gto_mobile_blind');
+                
+                watch([gameFormat, myChips, currentBlind], () => {
+                    localStorage.setItem('gto_mobile_mode', gameFormat.value);
+                    localStorage.setItem('gto_mobile_chips', myChips.value);
+                    localStorage.setItem('gto_mobile_blind', currentBlind.value);
+                });
+
+                watch(handInput, () => { nextTick(() => lucide.createIcons()); });
+                nextTick(() => lucide.createIcons());
+
+                return {
+                    gameFormat, position, actionType, handInput,
+                    myChips, currentBlind, tourneyPhase, isOpponentTight,
+                    KEYBOARD_RANKS, handleKey, backspace,
+                    stackDepthFormatted, isShortStack, availablePositions,
+                    isPair, displayHandSuited, displayHandOff, resultSuited, resultOffsuit,
+                    getColorClass, getActionName, betSizingRecommendation
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
