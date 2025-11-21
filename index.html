@@ -222,7 +222,7 @@
                 "positions": ["UTG", "HJ", "CO", "BTN", "SB", "BB"],
                 "data": {
                     "UTG": {
-                        "RFI": build("77+, ATs+, KJs+, QJs, JTs, AQo+"),
+                        "RFI": build("66+, ATs+, KTs+, QTs+, JTs, AJo+, KQo"), // Expanded from 77+
                         "vs_Raise": build("QQ+, AKs, AKo", "77-JJ, AQs, KQs, AQo"),
                         "vs_3Bet": build("KK+, AKs, AKo", "TT-QQ, AQs, KQs"),
                         "vs_Limp": build("77+, ATs+, KJs+, QJs, JTs, AQo+"),
@@ -251,13 +251,15 @@
                     },
                     "SB": {
                         "RFI": build("22+, A2s+, K2s+, Q4s+, J5s+, T6s+, 96s+, 86s+, 76s, 65s, 54s, A7o+, K9o+, Q9o+, J9o+, T9o"),
-                        "vs_Raise": build("TT+, AQo+, AJs+, KQs, A2s-A5s, 76s, 87s", "22-99, ATs, KJs, QJs, JTs, T9s"),
+                        // 3-Bet or Fold logic enacted for SB vs Raise
+                        "vs_Raise": build("88+, AQo+, AJs+, KQs, A2s-A5s, 76s, 87s", ""), 
                         "vs_3Bet": build("QQ+, AKo, AKs, A5s", "88-JJ, AQs, KQs"),
                         "vs_Limp": build("88+, AJs+, KQs, AQo+", "22-77, A2s-ATs, K2s-KJs, Q5s+, J7s+, T7s+, 97s+, 87s, 76s, 65s, 54s, ATo-AJo"),
                         "vs_Cold_3Bet": build("QQ+, AKs, AKo")
                     },
                     "BB": {
                         "RFI": build(""), 
+                        // POLARIZED 3-BET DEFENSE (Fixed A9s)
                         "vs_Raise": build(
                             "TT+, AQs+, AKo, A2s-A5s, 65s, 76s", 
                             "22-99, A2s-AJs, KTs+, QTs+, JTs, T9s, 98s, 87s, 54s, A9o-AQo, KTo+, QTo+, JTo"
@@ -309,13 +311,15 @@
                     },
                     "SB": { 
                         "RFI": build("22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 97s+, 87s, 76s, 65s, 54s, A2o+, K5o+, Q8o+, J8o+, T8o+, 98o"), 
-                        "vs_Raise": build("99+, AJs+, AQo+", "22-88, ATs, KQs, QJs, JTs, T9s"), 
+                        // UPDATED: Added A5s, A4s, KJs, QJs to Raise range for aggression
+                        "vs_Raise": build("99+, AJs+, AQo+, A5s, A4s, KJs, QJs", "22-88, ATs, KQs, JTs, T9s"), 
                         "vs_3Bet": build("99+, AJs+, AQo+", "77, 88, ATs, KQs, QJs"),
                         "vs_Limp": build("99+, AJs+, AQo+", "22-88, A2s-ATs, KTs+, QJs, JTs, T9s, 98s")
                     },
                     "BB": { 
                         "RFI": build(""), 
-                        "vs_Raise": build("99+, AJs+, AQo+, A2s-A5s", "22-88, A2s-ATs, KTs+, QJs, JTs, T9s, 98s, 87s, 76s, 65s, 54s, ATo-AJo, KTo+, QTo+, JTo"), 
+                        // UPDATED: Deep Stack BB defense is wide. Added gappers/connectors.
+                        "vs_Raise": build("99+, AJs+, AQo+, A2s-A5s", "22-88, A2s-ATs, KTs+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, ATo-AJo, KTo+, QTo+, JTo"), 
                         "vs_3Bet": build("TT+, AQs+, AKo", "77-99, AJs, ATs, KQs"),
                         "vs_Limp": bbLimp("JJ+, AQs+, AKo")
                     }
@@ -333,7 +337,8 @@
                     "SB": { "RFI": build("22+, A2s+, K2s+, Q2s+, J4s+, T6s+, 96s+, 87s, A2o+, K2o+, Q5o+, J7o+"), "vs_Raise": build("88+, AJs+, AQo+"), "vs_3Bet": build("88+, AJs+, AQo+"), "vs_Limp": build("99+, AJs+, AQo+") },
                     "BB": { 
                         "RFI": build(""), 
-                        "vs_Raise": build("77+, AJs+, AQo+", "22-66, A2s-ATs, KTs+, QJs, JTs, ATo-AJo"), 
+                        // Short Stack BB Defense: Call wide vs min-raises
+                        "vs_Raise": build("77+, AJs+, AQo+", "22-66, A2s-ATs, K2s-K9s, Q5s+, J7s+, T7s+, 97s+, 87s, ATo-AJo, KJo+, QJo"), 
                         "vs_3Bet": build("77+, AJs+, AQo+"), 
                         "vs_Limp": build("JJ+, AQs+, AKo")
                     }
