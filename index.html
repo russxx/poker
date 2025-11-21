@@ -440,3 +440,90 @@
                     if (gameFormat.value === 'mtt_8max') {
                         if (tourneyPhase.value === 'satellite_bubble' && !isShortStack.value) {
                             return (handKey === 'AA' || handKey === 'KK') ? 'raise' : 'fold';
+                        }
+                        if (tourneyPhase.value === 'icm') {
+                            if (isShortStack.value) {
+                                if (base === 'call' && !['AA','KK','QQ','AKs','AKo'].includes(handKey)) return 'fold';
+                            } else {
+                                if (base !== 'fold') {
+                                    const r1=handKey[0], r2=handKey[1], t=handKey[2]||'';
+                                    const i1=MAP[r1], i2=MAP[r2];
+                                    if (r1===r2 && i1>=8) return 'fold'; 
+                                    if (r1==='A' && t==='o' && i2>=6) return 'fold';
+                                    if (t==='s' && i2===i1+1 && i1>=7) return 'fold';
+                                }
+                            }
+                        }
+                        if (tourneyPhase.value === 'pko' && !isShortStack.value) {
+                            if (base === 'fold' && ['88','77','KJs','KTs','QJs','QTs','JTs'].includes(handKey)) return 'call';
+                        }
+                    }
+                    return base;
+                };
+
+                const resultSuited = computed(() => getResult(displayHandSuited.value));
+                const resultOffsuit = computed(() => getResult(displayHandOff.value));
+
+                const getColorClass = (action) => {
+                    if(action === 'raise') return 'bg-red-500';
+                    if(action === 'call') return 'bg-blue-500';
+                    if(action === 'mixed') return 'bg-mixed';
+                    return 'bg-slate-800';
+                };
+
+                const getActionName = (action) => {
+                    if(action === 'raise') return isShortStack.value ? 'PUSH' : 'RAISE';
+                    if(action === 'call') return 'CALL';
+                    if(action === 'mixed') return 'MIXED';
+                    return 'FOLD';
+                };
+
+                const getActionLabel = (key) => {
+                    const map = {
+                        'RFI': 'OPEN',
+                        'vs_Raise': 'RAISE',
+                        'vs_3Bet': '3BET',
+                        'vs_Limp': 'LIMP',
+                        'vs_Cold_3Bet': 'COLD 3B'
+                    };
+                    return map[key] || key;
+                };
+
+                const betSizingRecommendation = computed(() => {
+                    const act = actionType.value;
+                    const pos = position.value;
+                    if (act === 'RFI') return "Open 2.5x";
+                    if (act === 'vs_Limp') return "Iso 4BB+";
+                    if (act === 'vs_Cold_3Bet') return "Fold or Cold 4B";
+                    if (act === 'vs_Raise') return ['SB', 'BB'].includes(pos) ? "3-Bet 4x" : "3-Bet 3x";
+                    if (act === 'vs_3Bet') return isShortStack.value ? "Jam" : "4-Bet 2.2x";
+                    return "-";
+                });
+                
+                // --- PERSISTENCE ---
+                if (localStorage.getItem('gto_mobile_mode')) gameFormat.value = localStorage.getItem('gto_mobile_mode');
+                if (localStorage.getItem('gto_mobile_chips')) myChips.value = localStorage.getItem('gto_mobile_chips');
+                if (localStorage.getItem('gto_mobile_blind')) currentBlind.value = localStorage.getItem('gto_mobile_blind');
+                
+                watch([gameFormat, myChips, currentBlind], () => {
+                    localStorage.setItem('gto_mobile_mode', gameFormat.value);
+                    localStorage.setItem('gto_mobile_chips', myChips.value);
+                    localStorage.setItem('gto_mobile_blind', currentBlind.value);
+                });
+
+                watch(handInput, () => { nextTick(() => lucide.createIcons()); });
+                nextTick(() => lucide.createIcons());
+
+                return {
+                    gameFormat, position, actionType, handInput,
+                    myChips, currentBlind, tourneyPhase, isOpponentTight,
+                    handleKey, backspace,
+                    stackDepthFormatted, isShortStack, availablePositions,
+                    isPair, displayHandSuited, displayHandOff, resultSuited, resultOffsuit,
+                    getColorClass, getActionName, betSizingRecommendation, actionKeys, getActionLabel
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
