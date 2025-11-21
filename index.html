@@ -62,7 +62,7 @@
                 </select>
             </div>
 
-            <!-- Row 3: Action Buttons (GRID LAYOUT - NO SCROLL) -->
+            <!-- Row 3: Action Buttons -->
             <div class="grid grid-cols-5 gap-1 pt-0.5">
                 <button v-for="act in actionKeys" 
                     :key="act" 
@@ -258,7 +258,10 @@
                     },
                     "BB": {
                         "RFI": build(""), 
-                        "vs_Raise": build("TT+, AQs+, AKo, A2s-A5s, 65s, 76s", "22-99, ATs-AJs, KTs+, QTs+, JTs, T9s, 98s, 87s, 54s, A9o-AQo, KTo+, QTo+, JTo"),
+                        "vs_Raise": build(
+                            "TT+, AQs+, AKo, A2s-A5s, 65s, 76s", 
+                            "22-99, A2s-AJs, KTs+, QTs+, JTs, T9s, 98s, 87s, 54s, A9o-AQo, KTo+, QTo+, JTo"
+                        ),
                         "vs_3Bet": build("QQ+, AKo, AKs", "99-JJ, AQs, KQs"),
                         "vs_Limp": bbLimp("JJ+, AQs+, AKo"),
                         "vs_Cold_3Bet": build("QQ+, AKs, AKo")
@@ -349,7 +352,7 @@
                 const tourneyPhase = ref('chipev');
                 const isOpponentTight = ref(false);
 
-                // Action Key List (Mapping handled in template)
+                // Action Key List
                 const actionKeys = ['RFI', 'vs_Limp', 'vs_Raise', 'vs_3Bet', 'vs_Cold_3Bet'];
 
                 // --- CALCULATORS ---
@@ -500,4 +503,3 @@
     </script>
 </body>
 </html>
-
